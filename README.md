@@ -1,26 +1,36 @@
 # BPSR-AutoTag
 
-Script de AutoHotkey v2 para automatizar la entrada y las pantallas de Wondrous Tag en Blue Protocol: Star Resonance mediante firmas de píxeles y coordenadas.
+Automates entry and screen interactions for Wondrous Tag in Blue Protocol: Star Resonance using pixel signatures and scaled coordinates.
 
-## Uso básico
+## What it does
 
-Abre el juego y deja su ventana en primer plano. Por defecto, el script funciona como participante:
+- The leader handles the NPC interaction, selects Wondrous Tag, and opens Party Mode.
+- The leader detects all five supported screens. Participants detect the final three screens.
+- If a click does not advance the flow, the script retries after a short pause.
+- When enabled, it recognizes the screen already open and continues from there.
 
-- F8: alternar entre participante y líder. El líder gestiona también la interacción con el NPC y Party Mode.
-- F9: activar o pausar la automatización. Al activarla, detecta la pantalla que esté abierta y continúa desde ahí.
-- F10: cerrar el script.
+## Quick start
 
-Las coordenadas se basan en el área cliente de 1920×1080 y se ajustan al tamaño de la ventana. Si un clic no avanza la pantalla, el script vuelve a intentarlo tras una pausa.
+1. Download and run **BPSR-AutoTag.exe** from the [latest release](https://github.com/Joseleelsuper/BPSR-AutoTag/releases/latest).
+2. Open the game. The default role is **Participant**. The leader should stand near the Tag Ambassador NPC.
+3. Press **F8** to switch roles, then **F9** to start or pause automation. Press **F10** to exit the script.
 
-Para ejecutar el archivo AHK directamente, necesitas AutoHotkey v2.0.19.
+## Hotkeys
 
-Las versiones compiladas se publicarán en [Releases](https://github.com/Joseleelsuper/BPSR-AutoTag/releases/latest).
+- **F8**: switch between Participant and Leader.
+- **F9**: start or pause automation.
+- **F10**: exit the script.
 
-## Licencia
+## Requirements and compatibility
 
-Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](./LICENSE) para más detalles.
+- Windows.
+- To run the source file, install [AutoHotkey v2.0.19](https://github.com/AutoHotkey/AutoHotkey/releases/tag/v2.0.19).
+- Pixel signatures use a 1920x1080 client area as their base and scale to the game window size. Keep the game window active while automation runs.
 
-## Contacto
+## License
 
-Puedes encontrarme en Discord como Joseleelsuper, dentro de la [Guild DaoPalace](https://discord.gg/brwaAZktrn).
+This project is licensed under the MIT License. See [LICENSE](./LICENSE).
 
+## Support
+
+Join the [DaoPalace Discord server](https://discord.gg/brwaAZktrn) and find Joseleelsuper.
