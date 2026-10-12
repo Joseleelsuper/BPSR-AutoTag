@@ -12,7 +12,7 @@ Automates the Leader and Players button flow for Wondrous Tag in Blue Protocol: 
 
 - **Leader:** repeatedly presses **F** until `#E8E8E8` is detected at `(1485, 1015)`, then clicks **Party Mode**. If the point is still white after 3 seconds, it clicks again every 3 seconds until the button disappears. During the 1-minute shared wait, it also monitors that point and restarts Party Mode if the button reappears.
 - **Players:** detects `#E8E8E8` at `(1675, 1025)`, then clicks near the center of **Confirm** at `(1735, 1025)`.
-- **Shared flow:** waits 1 minute, clicks **Next** (`#E8E8E8` at `(925, 1000)`), waits 2 seconds, then waits for and clicks **Leave** (`#E8E8E8` at `(910, 1000)`). It waits 5 seconds before repeating the selected role flow.
+- **Shared flow:** waits 1 minute, clicks **Next** (`#E8E8E8` at `(925, 1000)`), waits 2 seconds, then detects **Leave** (`#E8E8E8` at `(910, 1000)`) and clicks its center at `(960, 1000)`. If **Leave** remains visible after 1.5 seconds, it retries until the button disappears, then waits 5 seconds before repeating the selected role flow.
 
 All four pixel checks and their clicks are shifted 30 screen pixels upward to compensate for the game window title bar. Color checks allow a small per-channel tolerance to account for rendering differences. If the script starts while either shared-flow point is visible, it resumes from that step. Pressing **F9** to pause and resume preserves the current phase while the script remains open.
 

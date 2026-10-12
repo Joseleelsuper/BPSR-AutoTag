@@ -15,13 +15,14 @@ global Config := {
     partyModeRetryMs: 3000,
     sharedWaitMs: 60000,
     betweenSharedClicksMs: 2000,
+    sharedClickRetryMs: 1500,
     cycleWaitMs: 5000,
     gameExecutables: ["BPSR_STEAM.exe", "BPSR_EPIC.exe", "BPSR.exe"],
     points: {
         leader: { x: 1485, y: 1015, color: 0xE8E8E8 },
         players: { x: 1675, y: 1025, color: 0xE8E8E8, clickX: 1735, clickY: 1025 },
         sharedFirst: { x: 925, y: 1000, color: 0xE8E8E8 },
-        sharedSecond: { x: 910, y: 1000, color: 0xE8E8E8 }
+        sharedSecond: { x: 910, y: 1000, color: 0xE8E8E8, clickX: 960, clickY: 1000 }
     }
 }
 
@@ -200,10 +201,24 @@ ProcessPhase(game) {
 
     if (State.phase = "shared-second") {
         if (PixelMatches(game, Config.points.sharedSecond)
-            && ClickGamePoint(game, Config.points.sharedSecond)) {
+            && ClickGamePoint(game, Config.points.sharedSecond, Config.points.sharedSecond.clickX, Config.points.sharedSecond.clickY)) {
+            State.phase := "shared-second-verify"
+            State.phaseDeadline := now + Config.sharedClickRetryMs
+            ShowStatus("Leave pulsado | comprobando en 1,5 s")
+        }
+        return
+    }
+
+    if (State.phase = "shared-second-verify" && now >= State.phaseDeadline) {
+        if PixelMatches(game, Config.points.sharedSecond) {
+            if ClickGamePoint(game, Config.points.sharedSecond, Config.points.sharedSecond.clickX, Config.points.sharedSecond.clickY) {
+                State.phaseDeadline := now + Config.sharedClickRetryMs
+                ShowStatus("Leave sigue visible | reintentando")
+            }
+        } else {
             State.phase := "cycle-wait"
             State.phaseDeadline := now + Config.cycleWaitMs
-            ShowStatus("Segundo paso pulsado | esperando 5 s")
+            ShowStatus("Leave completado | esperando 5 s")
         }
         return
     }
