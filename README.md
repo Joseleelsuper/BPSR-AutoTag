@@ -12,7 +12,7 @@ Automates the Leader and Players button flow for Wondrous Tag in Blue Protocol: 
 
 - **Leader:** repeatedly presses **F** until `#E8E8E8` is detected at `(1485, 1015)`, then clicks that point.
 - **Players:** waits for `#CCCCCC` at `(1675, 1025)`, then clicks that point.
-- **Shared flow:** waits 1 minute, clicks `#E8E8E8` at `(925, 1000)`, waits for and clicks `#E8E8E8` at `(910, 1000)`, then waits 5 seconds before repeating the selected role flow.
+- **Shared flow:** waits 1 minute, clicks **Next** (`#E8E8E8` at `(925, 1000)`), waits 2 seconds, then waits for and clicks **Leave** (`#E8E8E8` at `(910, 1000)`). It waits 5 seconds before repeating the selected role flow.
 
 All four pixel checks and their clicks are shifted 30 screen pixels upward to compensate for the game window title bar. Color checks allow a small per-channel tolerance to account for rendering differences. If the script starts while either shared-flow point is visible, it resumes from that step. Pressing **F9** to pause and resume preserves the current phase while the script remains open.
 

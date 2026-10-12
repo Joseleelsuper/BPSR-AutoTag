@@ -13,6 +13,7 @@ global Config := {
     colorTolerance: 10,
     leaderPressIntervalMs: 500,
     sharedWaitMs: 60000,
+    betweenSharedClicksMs: 2000,
     cycleWaitMs: 5000,
     gameExecutables: ["BPSR_STEAM.exe", "BPSR_EPIC.exe", "BPSR.exe"],
     points: {
@@ -155,8 +156,17 @@ ProcessPhase(game) {
     if (State.phase = "shared-first") {
         if (PixelMatches(game, Config.points.sharedFirst)
             && ClickGamePoint(game, Config.points.sharedFirst)) {
+            State.phase := "shared-second-delay"
+            State.phaseDeadline := now + Config.betweenSharedClicksMs
+            ShowStatus("Next pulsado | esperando 2 s antes de Leave")
+        }
+        return
+    }
+
+    if (State.phase = "shared-second-delay") {
+        if (now >= State.phaseDeadline) {
             State.phase := "shared-second"
-            ShowStatus("Primer paso pulsado")
+            ShowStatus("Buscando Leave")
         }
         return
     }
