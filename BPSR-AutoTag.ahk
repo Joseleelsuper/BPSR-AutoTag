@@ -19,7 +19,7 @@ global Config := {
     gameExecutables: ["BPSR_STEAM.exe", "BPSR_EPIC.exe", "BPSR.exe"],
     points: {
         leader: { x: 1485, y: 1015, color: 0xE8E8E8 },
-        players: { x: 1675, y: 1025, color: 0xCCCCCC },
+        players: { x: 1675, y: 1025, color: 0xE8E8E8, clickX: 1735, clickY: 1025 },
         sharedFirst: { x: 925, y: 1000, color: 0xE8E8E8 },
         sharedSecond: { x: 910, y: 1000, color: 0xE8E8E8 }
     }
@@ -158,7 +158,7 @@ ProcessPhase(game) {
 
     if (State.phase = "players-action") {
         if (PixelMatches(game, Config.points.players)
-            && ClickGamePoint(game, Config.points.players)) {
+            && ClickGamePoint(game, Config.points.players, Config.points.players.clickX, Config.points.players.clickY)) {
             BeginSharedWait()
         }
         return
@@ -293,14 +293,16 @@ ColorCloseEnough(color, target, tolerance) {
         && Abs((color & 0xFF) - (target & 0xFF)) <= tolerance)
 }
 
-ClickGamePoint(game, point) {
+ClickGamePoint(game, point, clickX := 0, clickY := 0) {
     global Config
 
     if !WinActive("ahk_id " . game.hwnd)
         return false
 
-    x := game.x + Round(point.x * game.w / Config.baseWidth)
-    y := game.y + Round(point.y * game.h / Config.baseHeight) - Config.buttonYOffsetPx
+    targetX := (clickX != 0) ? clickX : point.x
+    targetY := (clickY != 0) ? clickY : point.y
+    x := game.x + Round(targetX * game.w / Config.baseWidth)
+    y := game.y + Round(targetY * game.h / Config.baseHeight) - Config.buttonYOffsetPx
     Click(x, y)
     return true
 }
