@@ -14,7 +14,7 @@ Automates the Leader and Players button flow for Wondrous Tag in Blue Protocol: 
 - **Players:** waits for `#CCCCCC` at `(1675, 1025)`, then clicks that point.
 - **Shared flow:** waits 1 minute, clicks `#E8E8E8` at `(925, 1000)`, waits for and clicks `#E8E8E8` at `(910, 1000)`, then waits 5 seconds before repeating the selected role flow.
 
-Color checks allow a small per-channel tolerance to account for rendering differences. If the script starts while either shared-flow point is visible, it resumes from that step. Pressing **F9** to pause and resume preserves the current phase while the script remains open.
+All four pixel checks and their clicks are shifted 30 screen pixels upward to compensate for the game window title bar. Color checks allow a small per-channel tolerance to account for rendering differences. If the script starts while either shared-flow point is visible, it resumes from that step. Pressing **F9** to pause and resume preserves the current phase while the script remains open.
 
 ## Hotkeys
 

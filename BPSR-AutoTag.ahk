@@ -8,6 +8,7 @@ CoordMode("Mouse", "Screen")
 global Config := {
     baseWidth: 1920,
     baseHeight: 1080,
+    buttonYOffsetPx: 30,
     pollIntervalMs: 100,
     colorTolerance: 10,
     leaderPressIntervalMs: 500,
@@ -239,7 +240,7 @@ PixelMatches(game, point) {
     global Config
 
     x := game.x + Round(point.x * game.w / Config.baseWidth)
-    y := game.y + Round(point.y * game.h / Config.baseHeight)
+    y := game.y + Round(point.y * game.h / Config.baseHeight) - Config.buttonYOffsetPx
     try {
         color := PixelGetColor(x, y, "RGB")
     } catch {
@@ -262,7 +263,7 @@ ClickGamePoint(game, point) {
         return false
 
     x := game.x + Round(point.x * game.w / Config.baseWidth)
-    y := game.y + Round(point.y * game.h / Config.baseHeight)
+    y := game.y + Round(point.y * game.h / Config.baseHeight) - Config.buttonYOffsetPx
     Click(x, y)
     return true
 }
