@@ -165,6 +165,14 @@ ProcessPhase(game) {
     }
 
     if (State.phase = "shared-wait") {
+        if (State.role = "leader" && PixelMatches(game, Config.points.leader)) {
+            State.phase := "leader-verify"
+            State.phaseDeadline := now + Config.partyModeRetryMs
+            if ClickGamePoint(game, Config.points.leader)
+                ShowStatus("Party Mode reapareció | comprobando en 3 s")
+            return
+        }
+
         if (now >= State.phaseDeadline) {
             State.phase := "shared-first"
             ShowStatus("Buscando el primer paso compartido")
