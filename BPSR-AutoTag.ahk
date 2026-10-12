@@ -1,194 +1,196 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 #SingleInstance Force
+
 SendMode("Input")
 CoordMode("Pixel", "Screen")
 CoordMode("Mouse", "Screen")
-SetTitleMatchMode(2)
 
-global Config := Map()
-global State := Map()
+global Config := {
+    baseWidth: 1920,
+    baseHeight: 1080,
+    pollIntervalMs: 100,
+    colorTolerance: 10,
+    leaderPressIntervalMs: 500,
+    sharedWaitMs: 60000,
+    cycleWaitMs: 5000,
+    gameExecutables: ["BPSR_STEAM.exe", "BPSR_EPIC.exe", "BPSR.exe"],
+    points: {
+        leader: { x: 1485, y: 1015, color: 0xE8E8E8 },
+        players: { x: 1675, y: 1025, color: 0xCCCCCC },
+        sharedFirst: { x: 925, y: 1000, color: 0xE8E8E8 },
+        sharedSecond: { x: 910, y: 1000, color: 0xE8E8E8 }
+    }
+}
+
+global State := {
+    role: "players",
+    enabled: false,
+    busy: false,
+    phase: "stopped",
+    phaseDeadline: 0,
+    nextLeaderPressAt: 0,
+    lastWindowNoticeAt: 0
+}
 
 OnExit(Cleanup)
 
-F8:: ToggleRole()
-F9:: ToggleAutomation()
-F10:: ExitScript()
+F8::ToggleRole()
+F9::ToggleAutomation()
+F10::ExitScript()
 
-Init() {
-    global Config, State
-
-    Config["BaseWidth"] := 1920
-    Config["BaseHeight"] := 1080
-    Config["TimerInterval"] := 500
-    Config["ScreenResetDelay"] := 1800
-    Config["GameExecutables"] := ["BPSR_STEAM.exe", "BPSR_EPIC.exe", "BPSR.exe"]
-
-    ; Coordenadas relativas al cliente 1920x1080; los clics se escalan al tamano real.
-    ; Lider: Wondrous Tag (1535,635) y Party Mode (1485,983).
-    ; Todos: Confirm (1740,982), Next/Leave (960,968).
-    Config["Screens"] := Map(
-        "npc-tag", {
-            leaderOnly: true,
-            clickX: 1535,
-            clickY: 635,
-            retryMs: 5000,
-            signature: {
-                required: 3,
-                points: [{ x: 1420, y: 565, color: 0xFFFFFF, tolerance: 40 }, { x: 1426, y: 635, color: 0xCACACA,
-                    tolerance: 55 }, { x: 1490, y: 635, color: 0x040C0F, tolerance: 18 }, { x: 1600, y: 635, color: 0x071216,
-                        tolerance: 18 }
-                ]
-            }
-        },
-        "party-mode", {
-            leaderOnly: true,
-            clickX: 1485,
-            clickY: 983,
-            retryMs: 8000,
-            signature: {
-                required: 2,
-                points: [{ x: 1390, y: 240, color: 0x7692C3, tolerance: 35 }, { x: 1500, y: 240, color: 0x7893C3,
-                    tolerance: 35 }, { x: 1485, y: 983, color: 0xE8E8E8, tolerance: 20 }, { x: 1800, y: 1000, color: 0xE8E8E8,
-                        tolerance: 20 }
-                ]
-            }
-        },
-        "confirm-entry", {
-            leaderOnly: false,
-            clickX: 1740,
-            clickY: 982,
-            retryMs: 2500,
-            signature: {
-                required: 2,
-                points: [{ x: 600, y: 70, color: 0xFFFFFF, tolerance: 45 }, { x: 200, y: 700, color: 0xF1F4F1,
-                    tolerance: 45 }, { x: 980, y: 890, color: 0xC1C1C1, tolerance: 55 }, { x: 1740, y: 968, color: 0xE8E8E8,
-                        tolerance: 20 }
-                ]
-            }
-        },
-        "match-results", {
-            leaderOnly: false,
-            clickX: 960,
-            clickY: 968,
-            retryMs: 4500,
-            signature: {
-                required: 3,
-                points: [{ x: 400, y: 390, color: 0xDADADA, tolerance: 15 }, { x: 750, y: 390, color: 0xDADADA,
-                    tolerance: 15 }, { x: 750, y: 570, color: 0xDADADA, tolerance: 15 }, { x: 850, y: 968, color: 0xE8E8E8,
-                        tolerance: 20 }
-                ]
-            }
-        },
-        "rewards", {
-            leaderOnly: false,
-            clickX: 960,
-            clickY: 968,
-            retryMs: 4500,
-            signature: {
-                required: 2,
-                points: [{ x: 800, y: 120, color: 0xFFF9F3, tolerance: 35 }, { x: 960, y: 139, color: 0xFFF9F3,
-                    tolerance: 35 }, { x: 850, y: 968, color: 0xE8E8E8, tolerance: 20 }, { x: 960, y: 968, color: 0x323232,
-                        tolerance: 25 }
-                ]
-            }
-        }
-    )
-
-    State["Role"] := "participant"
-    State["Enabled"] := false
-    State["Busy"] := false
-    State["CurrentScreen"] := ""
-    State["LastActionAt"] := 0
-    State["NoScreenSince"] := 0
-
-    ShowStatus("AutoTag listo | F8: rol | F9: activar | F10: salir", 5000)
-}
-
-Init()
+ShowStatus("AutoTag listo | F8: rol | F9: activar/pausar | F10: salir", 5000)
 
 ToggleRole(*) {
     global State
 
-    State["Role"] := State["Role"] = "leader" ? "participant" : "leader"
-        roleLabel := State["Role"] = "leader"
-            ? "LIDER (5 pantallas)"
-                : "PARTICIPANTE (3 pantallas)"
-        ShowStatus("Rol: " . roleLabel, 3000)
+    State.role := (State.role = "leader") ? "players" : "leader"
+    State.phase := "detect-start"
+    State.phaseDeadline := 0
+    State.nextLeaderPressAt := 0
+
+    ShowStatus("Rol: " . RoleLabel() . (State.enabled ? " | flujo reiniciado" : ""))
 }
 
 ToggleAutomation(*) {
     global Config, State
 
-    State["Enabled"] := !State["Enabled"]
-    if State["Enabled"] {
-        ; El primer ciclo detecta la pantalla visible aunque se active a mitad del flujo.
-        State["CurrentScreen"] := ""
-        State["LastActionAt"] := 0
-        State["NoScreenSince"] := 0
-        SetTimer(CheckLogic, Config["TimerInterval"])
-        ShowStatus("AutoTag ACTIVADO | " . RoleLabel() . " | F9: pausar", 3000)
+    if State.enabled {
+        State.enabled := false
+        SetTimer(CheckLogic, 0)
+        ShowStatus("AutoTag pausado")
         return
     }
 
-    SetTimer(CheckLogic, 0)
-    State["CurrentScreen"] := ""
-    State["LastActionAt"] := 0
-    State["NoScreenSince"] := 0
-    ShowStatus("AutoTag pausado", 2000)
+    State.enabled := true
+    if (State.phase = "stopped")
+        State.phase := "detect-start"
+    SetTimer(CheckLogic, Config.pollIntervalMs)
+    ShowStatus("AutoTag activado | Rol: " . RoleLabel())
 }
 
 ExitScript(*) {
     global State
 
-    State["Enabled"] := false
+    State.enabled := false
     SetTimer(CheckLogic, 0)
     ExitApp()
 }
 
-CheckLogic() {
-    global Config, State
+CheckLogic(*) {
+    global State
 
-    if !State["Enabled"] || State["Busy"]
+    if !State.enabled || State.busy
         return
 
-    State["Busy"] := true
+    State.busy := true
     try {
         game := GetActiveGameWindow()
-        if !IsObject(game)
-            return
-
-        screenName := DetectScreen(game)
-        if (screenName = "") {
-            if (State["CurrentScreen"] != "") {
-                if (State["NoScreenSince"] = 0) {
-                    State["NoScreenSince"] := A_TickCount
-                } else if (A_TickCount - State["NoScreenSince"] >= Config["ScreenResetDelay"]) {
-                    State["CurrentScreen"] := ""
-                    State["LastActionAt"] := 0
-                    State["NoScreenSince"] := 0
-                }
+        if !IsObject(game) {
+            now := A_TickCount
+            if (State.lastWindowNoticeAt = 0 || now - State.lastWindowNoticeAt >= 3000) {
+                ShowStatus("Activa la ventana del juego para continuar")
+                State.lastWindowNoticeAt := now
             }
             return
         }
 
-        State["NoScreenSince"] := 0
-        screen := Config["Screens"][screenName]
-        if (State["CurrentScreen"] != screenName) {
-            State["CurrentScreen"] := screenName
-            State["LastActionAt"] := 0
-        }
-
-        if (State["LastActionAt"] != 0
-            && A_TickCount - State["LastActionAt"] < screen.retryMs)
-            return
-
-        if ClickGamePoint(game, screen)
-            State["LastActionAt"] := A_TickCount
+        State.lastWindowNoticeAt := 0
+        ProcessPhase(game)
     } catch as e {
-        ShowStatus("AutoTag: " . e.Message, 3000)
+        ShowStatus("AutoTag: " . e.Message, 4000)
     } finally {
-        State["Busy"] := false
+        State.busy := false
     }
+}
+
+ProcessPhase(game) {
+    global Config, State
+
+    now := A_TickCount
+
+    if (State.phase = "detect-start") {
+        if PixelMatches(game, Config.points.sharedFirst) {
+            State.phase := "shared-first"
+            ShowStatus("Reanudado en el primer paso compartido")
+        } else if PixelMatches(game, Config.points.sharedSecond) {
+            State.phase := "shared-second"
+            ShowStatus("Reanudado en el segundo paso compartido")
+        } else {
+            StartRolePhase()
+            ShowStatus("Rol: " . RoleLabel())
+        }
+        return
+    }
+
+    if (State.phase = "leader-action") {
+        if PixelMatches(game, Config.points.leader) {
+            if ClickGamePoint(game, Config.points.leader)
+                BeginSharedWait()
+        } else if (State.nextLeaderPressAt = 0 || now >= State.nextLeaderPressAt) {
+            if WinActive("ahk_id " . game.hwnd) {
+                Send("{f}")
+                State.nextLeaderPressAt := now + Config.leaderPressIntervalMs
+            }
+        }
+        return
+    }
+
+    if (State.phase = "players-action") {
+        if (PixelMatches(game, Config.points.players)
+            && ClickGamePoint(game, Config.points.players)) {
+            BeginSharedWait()
+        }
+        return
+    }
+
+    if (State.phase = "shared-wait") {
+        if (now >= State.phaseDeadline) {
+            State.phase := "shared-first"
+            ShowStatus("Buscando el primer paso compartido")
+        }
+        return
+    }
+
+    if (State.phase = "shared-first") {
+        if (PixelMatches(game, Config.points.sharedFirst)
+            && ClickGamePoint(game, Config.points.sharedFirst)) {
+            State.phase := "shared-second"
+            ShowStatus("Primer paso pulsado")
+        }
+        return
+    }
+
+    if (State.phase = "shared-second") {
+        if (PixelMatches(game, Config.points.sharedSecond)
+            && ClickGamePoint(game, Config.points.sharedSecond)) {
+            State.phase := "cycle-wait"
+            State.phaseDeadline := now + Config.cycleWaitMs
+            ShowStatus("Segundo paso pulsado | esperando 5 s")
+        }
+        return
+    }
+
+    if (State.phase = "cycle-wait" && now >= State.phaseDeadline) {
+        StartRolePhase()
+        ShowStatus("Nuevo ciclo | Rol: " . RoleLabel())
+    }
+}
+
+BeginSharedWait() {
+    global Config, State
+
+    State.phase := "shared-wait"
+    State.phaseDeadline := A_TickCount + Config.sharedWaitMs
+    State.nextLeaderPressAt := 0
+    ShowStatus("Acción del rol completada | esperando 1 min")
+}
+
+StartRolePhase() {
+    global State
+
+    State.phase := (State.role = "leader") ? "leader-action" : "players-action"
+    State.phaseDeadline := 0
+    State.nextLeaderPressAt := 0
 }
 
 GetActiveGameWindow() {
@@ -201,7 +203,7 @@ GetActiveGameWindow() {
     try {
         processName := StrLower(WinGetProcessName("ahk_id " . hwnd))
         isGame := false
-        for _, exeName in Config["GameExecutables"] {
+        for _, exeName in Config.gameExecutables {
             if (processName = StrLower(exeName)) {
                 isGame := true
                 break
@@ -233,75 +235,46 @@ GetActiveGameWindow() {
     }
 }
 
-DetectScreen(game) {
-    global Config, State
-
-    ; Se reconocen primero las pantallas posteriores para permitir empezar en cualquier punto.
-    if IsSignatureVisible("rewards", game)
-        return "rewards"
-    if IsSignatureVisible("match-results", game)
-        return "match-results"
-    if IsSignatureVisible("confirm-entry", game)
-        return "confirm-entry"
-
-    if (State["Role"] = "leader") {
-        if IsSignatureVisible("party-mode", game)
-            return "party-mode"
-        if IsSignatureVisible("npc-tag", game)
-            return "npc-tag"
-    }
-
-    return ""
-}
-
-IsSignatureVisible(screenName, game) {
+PixelMatches(game, point) {
     global Config
 
-    screen := Config["Screens"][screenName]
-    signature := screen.signature
-    matches := 0
-
-    for _, point in signature.points {
-        x := game.x + Round(point.x * game.w / Config["BaseWidth"])
-        y := game.y + Round(point.y * game.h / Config["BaseHeight"])
-        try {
-            color := PixelGetColor(x, y, "RGB")
-        } catch {
-            continue
-        }
-
-        if ColorCloseEnough(color, point.color, point.tolerance)
-            matches += 1
+    x := game.x + Round(point.x * game.w / Config.baseWidth)
+    y := game.y + Round(point.y * game.h / Config.baseHeight)
+    try {
+        color := PixelGetColor(x, y, "RGB")
+    } catch {
+        return false
     }
 
-    return matches >= signature.required
+    return ColorCloseEnough(color, point.color, Config.colorTolerance)
 }
 
-ColorCloseEnough(color1, color2, tolerance) {
-    return Abs(((color1 >> 16) & 0xFF) - ((color2 >> 16) & 0xFF)) <= tolerance
-    && Abs(((color1 >> 8) & 0xFF) - ((color2 >> 8) & 0xFF)) <= tolerance
-    && Abs((color1 & 0xFF) - (color2 & 0xFF)) <= tolerance
+ColorCloseEnough(color, target, tolerance) {
+    return (Abs(((color >> 16) & 0xFF) - ((target >> 16) & 0xFF)) <= tolerance
+        && Abs(((color >> 8) & 0xFF) - ((target >> 8) & 0xFF)) <= tolerance
+        && Abs((color & 0xFF) - (target & 0xFF)) <= tolerance)
 }
 
-ClickGamePoint(game, screen) {
+ClickGamePoint(game, point) {
     global Config
 
     if !WinActive("ahk_id " . game.hwnd)
         return false
 
-    x := game.x + Round(screen.clickX * game.w / Config["BaseWidth"])
-    y := game.y + Round(screen.clickY * game.h / Config["BaseHeight"])
+    x := game.x + Round(point.x * game.w / Config.baseWidth)
+    y := game.y + Round(point.y * game.h / Config.baseHeight)
     Click(x, y)
     return true
 }
 
 RoleLabel() {
     global State
-    return State["Role"] = "leader" ? "lider" : "participante"
+    return (State.role = "leader") ? "Leader" : "Players"
 }
 
 ShowStatus(message, durationMs := 2500) {
     ToolTip(message, 10, 10)
+    SetTimer(HideStatus, 0)
     SetTimer(HideStatus, -durationMs)
 }
 
