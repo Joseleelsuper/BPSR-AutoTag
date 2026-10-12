@@ -12,6 +12,7 @@ global Config := {
     pollIntervalMs: 100,
     colorTolerance: 10,
     leaderPressIntervalMs: 500,
+    partyModeRetryMs: 3000,
     sharedWaitMs: 60000,
     betweenSharedClicksMs: 2000,
     cycleWaitMs: 5000,
@@ -126,12 +127,30 @@ ProcessPhase(game) {
 
     if (State.phase = "leader-action") {
         if PixelMatches(game, Config.points.leader) {
-            if ClickGamePoint(game, Config.points.leader)
-                BeginSharedWait()
+            if ClickGamePoint(game, Config.points.leader) {
+                State.phase := "leader-verify"
+                State.phaseDeadline := now + Config.partyModeRetryMs
+                State.nextLeaderPressAt := 0
+                ShowStatus("Party Mode pulsado | comprobando en 3 s")
+            }
         } else if (State.nextLeaderPressAt = 0 || now >= State.nextLeaderPressAt) {
             if WinActive("ahk_id " . game.hwnd) {
                 Send("{f}")
                 State.nextLeaderPressAt := now + Config.leaderPressIntervalMs
+            }
+        }
+        return
+    }
+
+    if (State.phase = "leader-verify") {
+        if (now >= State.phaseDeadline) {
+            if PixelMatches(game, Config.points.leader) {
+                if ClickGamePoint(game, Config.points.leader) {
+                    State.phaseDeadline := now + Config.partyModeRetryMs
+                    ShowStatus("Party Mode sigue visible | reintentando en 3 s")
+                }
+            } else {
+                BeginSharedWait()
             }
         }
         return

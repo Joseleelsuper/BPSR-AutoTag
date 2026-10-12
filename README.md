@@ -10,7 +10,7 @@ Automates the Leader and Players button flow for Wondrous Tag in Blue Protocol: 
 
 ## What it automates
 
-- **Leader:** repeatedly presses **F** until `#E8E8E8` is detected at `(1485, 1015)`, then clicks that point.
+- **Leader:** repeatedly presses **F** until `#E8E8E8` is detected at `(1485, 1015)`, then clicks **Party Mode**. If the point is still white after 3 seconds, it clicks again every 3 seconds until the button disappears, then starts the shared flow.
 - **Players:** waits for `#CCCCCC` at `(1675, 1025)`, then clicks that point.
 - **Shared flow:** waits 1 minute, clicks **Next** (`#E8E8E8` at `(925, 1000)`), waits 2 seconds, then waits for and clicks **Leave** (`#E8E8E8` at `(910, 1000)`). It waits 5 seconds before repeating the selected role flow.
 
