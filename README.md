@@ -1,5 +1,7 @@
 # BPSR-AutoTag
 
+Current release: **v1.7**.
+
 Automates the Leader and Players button flow for Wondrous Tag in Blue Protocol: Star Resonance using pixel colors and scaled coordinates.
 
 ## Quick start
@@ -21,6 +23,10 @@ All four pixel checks and their clicks are shifted 30 screen pixels upward to co
 - **F8**: switch between Players and Leader.
 - **F9**: start or pause automation.
 - **F10**: exit the script.
+
+## Logs
+
+AutoTag writes `BPSR-AutoTag.log` beside the running `.exe` (or source `.ahk`) in UTF-8. Each line uses `[HH:mm:ss] [LEVEL] message`, with `DEBUG`, `INFO`, `WARNING`, and `ERROR` levels. The log records startup and shutdown, role and automation changes, game-window detection, button clicks, and automation errors.
 
 ## Requirements and compatibility
 
